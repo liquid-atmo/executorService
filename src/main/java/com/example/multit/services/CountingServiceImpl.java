@@ -1,49 +1,36 @@
-package com.example.multit;
+package com.example.multit.services;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class CountingServiceImpl implements CountingService {
-    public static volatile int counter = 0;
 
-    private static int threadsNumber;
-
-    @Value("${spring.application.threadsNumber}")
-    private void setThreadsNumber(int value) {
-        threadsNumber = value;
-    }
-
-    private static int limit;
-
-    @Value("${spring.application.limit}")
-    private void setLimit(int value) {
-        limit = value;
-    }
-
-    static class Worker implements Runnable {
+     static class Worker implements Runnable {
         private final CountDownLatch latch;
         private final String name;
         private final int limit;
+    private final int threadsNumber;
 
-
-        public Worker(CountDownLatch latch, String name, int limit) {
+        public Worker(CountDownLatch latch, String name, int limit, int threadsNumber) {
             this.latch = latch;
             this.name = name;
             this.limit = limit;
+            this.threadsNumber = threadsNumber;
         }
         @Override
         public void run() {
-            while (counter <= limit - threadsNumber) {
+            int counter = 0;
+            while (counter < (limit / threadsNumber)) {
                 doWork();
-                incrementCounter();
+                counter++;
             }
             latch.countDown();
-            System.out.println(name + " finished");
+            System.out.println(name + " finished; counter ="  + counter );
         }
         public void doWork() {
             try {
@@ -54,11 +41,11 @@ public class CountingServiceImpl implements CountingService {
             System.out.println(name + " doing work");
         }
     }
-    public void threadExecutorWithLatch() throws InterruptedException {
+    public void threadExecutorWithLatch(int threadsNumber, int limit) throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(threadsNumber);
         long start = Instant.now().toEpochMilli();
         for (int i = 0; i < threadsNumber; i++) {
-            Thread thread = new Thread(new Worker(latch, "Thread-" + i, limit));
+            Thread thread = new Thread(new Worker(latch, "Thread-" + i, limit, threadsNumber));
             long startOneThread = Instant.now().toEpochMilli();
             System.out.println(("Thread-" + i) + " started at " + startOneThread + " ms");
             thread.start();
@@ -67,11 +54,8 @@ public class CountingServiceImpl implements CountingService {
         long end = Instant.now().toEpochMilli();
         System.out.println("Thread pool finished at " + end + " ms");
         System.out.println("Total time used: " + (end - start));
-        System.out.println("**** Counter: " + counter + " **** ");
     }
 
-    private static synchronized void incrementCounter() {
-        counter++;
-    }
+
 
 }
