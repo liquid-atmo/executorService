@@ -1,11 +1,9 @@
 package com.example.multit.services;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
 import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
+
 
 @Service
 public class CountingServiceImpl implements CountingService {
